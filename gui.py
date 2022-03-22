@@ -17,12 +17,16 @@ from FolderChooser import Folder
 urls = []
 entreprisesInfos = [[], [], [], [], []]
 folder = Folder()
-
+currenturl=""
 
 def stringify(chaine):
     n = chaine.count(' ')
     for index in range(0, n):
-        chaine = chaine.replace(" ", "-")
+        chaine = chaine.replace(" ", "+")
+    chaine = chaine.replace("(", "%28")
+    chaine = chaine.replace(")", "%29")
+    chaine = chaine.replace(",", "%2C")
+    chaine = chaine.replace("'", "%27")
     return chaine
 
 
@@ -31,33 +35,56 @@ def init():
     thread.start()
 
 
+
 def getLiens():
-    url = "https://www.pagesjaunes.fr/annuaire/"
+
+    url = "https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui="
     metier = stringify(e2.get())
-    region = stringify(e1.get()) + "/"
-    url += region
+    region = stringify(e1.get())
     url += metier
+    url += "&ou="
+    url += region
+    url += "&univers=pagesjaunes"
+    page = folder.get_currentPage()
+    if page > 1:
+        pageUrl = "&page="+str(page)
+        url += pageUrl
     options = webdriver.ChromeOptions()
     options.add_argument("--user-data-dir=" + folder.get_repertoire())
-    driver = webdriver.Chrome("C:/chromedriver.exe",options=options)
+    driver = webdriver.Chrome("C:/chromedriver.exe", options=options)
     driver.get(url)
     content = driver.page_source
     soup = BeautifulSoup(content, features="html.parser")
     infos = soup.findAll("a", {"class": "bi-denomination"})
-    total = 0
+    if page > 1:
+        total = folder.get_total()
+    else:
+        total=0
+    regex1 = re.compile('.*aucun_resultat.*')
+    regex2 = re.compile('.*wording-no-responses.*')
+    notfound1 = soup.find("p", {"class": regex1})
+    notfound2 = soup.find("h1", {"class": regex2})
+    if notfound1 is not None:
+        mylist.insert(END,notfound1.getText())
+        return 0
+    elif notfound2 is not None:
+        mylist.insert(END,notfound2.getText())
+        return 0
     for infos_div in infos:
-        titre_lien = infos_div.get('href')
+        titre_lien = infos_div.get('href')#
         if (titre_lien != "#"):
             mylist.insert(END, str(total + 1) + " https://www.pagesjaunes.fr" + titre_lien)
             urls.append("https://www.pagesjaunes.fr" + titre_lien)
             total += 1
         # if total == 20:
         # break
-
+    folder.set_total(total)
     messagebox.showinfo("Collecte de liens", "Liens des professionels récuperés !")
     button3["state"] = NORMAL
     button3["cursor"] = "hand1"
+    button1['text'] = "Page "+str(page+1)+" =>"
     driver.close()
+
 
 
 def effacer():
@@ -108,17 +135,19 @@ def exporter():
 def reboot():
     e1.delete(0, END)
     e2.delete(0, END)
+    folder.erease()
     urls.clear()
     button3["state"] = DISABLED
     button4["state"] = DISABLED
     mylist.delete(0, END)
     entreprisesInfos.clear()
+    button1['text'] = "chercher Urls"
 
 
 master = Tk()
 n_rows = 8
 n_columns = 15
-master.title('Python Web Scrapping 1.0.2')
+master.title('Ayrton´s Python Web Scrapping 1.0.3')
 master.iconbitmap("C:/scrapping.ico")
 for i in range(n_rows):
     master.grid_rowconfigure(i, weight=1)
@@ -134,22 +163,21 @@ def select_folder():
         initialdir='/')
     folder.set_repertoire(filename)
     print(filename)
-    f2 = open("C:/Users/user/Downloads/repertoire.txt", "wb")
-    pickle.dump(filename, f2)
-    f2.close()
-    messagebox.showinfo("Confirmation",
-                        "Le chemin a bien été trouvé et sauvegardé !")
+    if filename != "":
+        f2 = open("repertoire.txt", "wb")
+        pickle.dump(filename, f2)
+        f2.close()
+        messagebox.showinfo("Confirmation",
+                            "Le chemin a bien été trouvé et sauvegardé !")
 
 
 # open button
 open_button = tk.Button(
-    master,fg='white', bg='#003eb1', font=myFont, cursor="hand1",
-    text='Charger profile chrome',
+    master, fg='white', bg='#003eb1', font=myFont, cursor="hand1",
+    text='Charger profil chrome',
     command=select_folder
 )
 open_button.grid(row=0, column=0)
-
-
 
 Label(master, text='region', font=myFont).grid(row=1, column=0)
 Label(master, text='metier', font=myFont).grid(row=2, column=0)

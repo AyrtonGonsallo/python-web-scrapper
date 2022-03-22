@@ -18,7 +18,7 @@ class Folder(metaclass=Singleton):
 
     def __init__(self):
         try:
-            f = open("C:/Users/user/Downloads/repertoire.txt", "rb")
+            f = open("repertoire.txt", "rb")
             self.repertoire = pickle.load(f)
             f.close()
 
@@ -40,6 +40,10 @@ class Folder(metaclass=Singleton):
             thread1 = Thread(target=aide)
             thread1.start()
 
+        self.currentUrl=""
+        self.currentPage = 0
+        self.total=0
+
     # getter method
     def get_repertoire(self):
         return self.repertoire
@@ -47,3 +51,34 @@ class Folder(metaclass=Singleton):
     # setter method
     def set_repertoire(self, rep):
         self.repertoire = rep
+
+    def get_total(self):
+        return self.total
+
+    # setter method
+    def set_total(self, rep):
+        self.total = rep
+
+    # getter method
+    def get_currentUrl(self):
+        return self.currentUrl
+
+    # setter method
+    def set_currentUrl(self, rep):
+        self.currentUrl = rep
+
+    # getter method
+    def get_currentPage(self):
+        self.currentPage+=1
+        return (self.currentPage)
+
+    # setter method
+    def set_currentPage(self, rep):
+        self.currentPage = rep
+
+    def erease(self):
+        self.currentUrl = ""
+        self.currentPage = 0
+        self.total = 0
+
+
